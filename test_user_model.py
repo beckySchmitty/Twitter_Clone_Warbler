@@ -34,25 +34,54 @@ class UserModelTestCase(TestCase):
 
     def setUp(self):
         """Create test client, add sample data."""
+        db.drop_all()
+        db.create_all()
 
-        User.query.delete()
-        Message.query.delete()
-        Follows.query.delete()
+        u1 = User(email="test@test.com",
+            username="test_user_one",
+            password="HASHED_PASSWORD")
+        u1_id = 111
+        u1.id = u1_id
+
+        u2 = User(
+            email="test2@test.com",
+            username="test_user_two",
+            password="HASHED_PASSWORD")
+        u2_id = 222
+        u2.id = u2_id
+
+        db.session.add_all([u1, u2])
+        db.session.commit()
+
+        u1 = User.query.get(u1_id)
+        u2 = User.query.get(u2_id)
+
+        self.u1 = u1
+        self.u1_id = u1_id
+
+        self.u2 = u2
+        self.u2_id = u2_id
 
         self.client = app.test_client()
+
+
+        self.client = app.test_client()
+
+    def tearDown(self):
+        res = super().tearDown()
+        db.session.rollback()
+        return res
 
     def test_user_model(self):
         """Does basic model work?"""
 
-        u = User(
-            email="test@test.com",
-            username="testuser",
-            password="HASHED_PASSWORD"
-        )
-
-        db.session.add(u)
-        db.session.commit()
-
         # User should have no messages & no followers
-        self.assertEqual(len(u.messages), 0)
-        self.assertEqual(len(u.followers), 0)
+        self.assertEqual(len(self.u1.messages), 0)
+        self.assertEqual(len(self.u1.followers), 0)
+        self.assertEqual(self.u1.__repr__(), repr)
+
+    def test_is_following(self):
+        """Does is_following show users they follow?"""
+        self.u1.following.append(self.u2)
+        self.assertEqual(self.u2.followers, 1)
+        self.assertIn(self.u1, self.u2.followers)

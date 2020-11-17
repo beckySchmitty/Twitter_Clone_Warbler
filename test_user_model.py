@@ -52,11 +52,7 @@ class UserModelTestCase(TestCase):
         u2 = User.query.get(u2_id)
 
         self.u1 = u1
-
         self.u2 = u2
-
-        self.client = app.test_client()
-
 
         self.client = app.test_client()
 

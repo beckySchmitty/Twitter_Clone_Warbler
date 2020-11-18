@@ -10,21 +10,10 @@ from unittest import TestCase
 
 from models import db, connect_db, Message, User
 
-# BEFORE we import our app, let's set an environmental variable
-# to use a different database for tests (we need to do this
-# before we import our app, since that will have already
-# connected to the database
-
 os.environ['DATABASE_URL'] = "postgresql:///warbler-test"
-
-
-# Now we can import app
 
 from app import app, CURR_USER_KEY
 
-# Create our tables (we do this here, so we only create the tables
-# once for all tests --- in each test, we'll delete the data
-# and create fresh new clean test data
 
 db.create_all()
 
@@ -44,30 +33,55 @@ class MessageViewTestCase(TestCase):
 
         self.client = app.test_client()
 
-        self.testuser = User.signup(username="testuser",
-                                    email="test@test.com",
-                                    password="testuser",
-                                    image_url=None)
+        u1 = User.signup("test_user", "test@test.com", "password", None)
+        u1_id = 111
+        u1.id = u1_id
 
         db.session.commit()
+
+        self.u1 = u1
+
+        # u2 = User.signup("test_user_two", "test2@test.com", "password", None)
+        # u2_id = 222
+        # u2.id = u2_id
+
+        # db.session.add_all([u1, u2])
+        # db.session.commit()
+
+        # u1 = User.query.get(u1_id)
+        # u2 = User.query.get(u2_id)
+
+        # self.u1 = u1
+        # self.u2 = u2
+
+        # self.client = app.test_client()
 
     def test_add_message(self):
         """Can use add a message?"""
 
-        # Since we need to change the session to mimic logging in,
-        # we need to use the changing-session trick:
+        with self.client.session_transaction() as sess:
+            sess[CURR_USER_KEY] = self.u1.id
 
-        with self.client as c:
-            with c.session_transaction() as sess:
-                sess[CURR_USER_KEY] = self.testuser.id
+        resp = self.client.post("/messages/new", data={"text": "Hello"})
 
-            # Now, that session setting is saved, so we can have
-            # the rest of ours test
+        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(resp.location, 'http://localhost/users/111')
 
-            resp = c.post("/messages/new", data={"text": "Hello"})
+        msg = Message.query.one()
+        self.assertEqual(msg.text, "Hello")
 
-            # Make sure it redirects
-            self.assertEqual(resp.status_code, 302)
 
-            msg = Message.query.one()
-            self.assertEqual(msg.text, "Hello")
+    def test_message_delete(self):
+        with self.client.session_transaction() as sess:
+            sess[CURR_USER_KEY] = self.u1.id
+        
+        msg = Message(text="testing message content", user_id=111)
+        msg.id = 1234
+        db.session.add(msg)
+        db.session.commit()
+
+        resp = self.client.post("/messages/1234/delete", follow_redirects=True)
+        self.assertEqual(resp.status_code, 200)
+
+        msg_d = Message.query.get(1234)
+        self.assertIsNone(msg_d)

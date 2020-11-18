@@ -9,6 +9,7 @@ os.environ['DATABASE_URL'] = "postgresql:///warbler-test"
 # Now we can import app
 from app import app
 
+# db.drop_all()
 db.create_all()
 
 # Don't have WTForms use CSRF at all, since it's a pain to test
@@ -21,8 +22,6 @@ class UserViewsTestCase(TestCase):
 
     def setUp(self):
         """Create test client, add sample data."""
-        db.drop_all()
-        db.create_all()
 
         u1 = User.signup("test_user_one", "test@test.com", "password", None)
         u1_id = 111
@@ -49,20 +48,22 @@ class UserViewsTestCase(TestCase):
         return res
 
     def test_signup_get(self):
-        resp = self.client.get('/signup')
+        resp = self.client.get('/signup', follow_redirects=True)
         self.assertEqual(resp.status_code, 200)
 
     def test_signup_post(self):
-        resp = self.client.post('/signup', data = {'username': 'test_user', 'email': 'fake@email.com', 'password': 'passw0rd'})
+        resp = self.client.post('/signup', data = {'username': 'test_user', 'email': 'fake@email.com', 'password': 'passw0rd'}, follow_redirects=True)
         html = resp.get_data(as_text=True)
 
         self.assertEqual(resp.status_code, 200)
         self.assertIn('test_user', html)
         self.assertIn('<h3>Log Messages</h3>', html)
 
-    def test_logged_in(self):
-        resp = self.client.post('')
+    def test_loggin_(self):
+        resp = self.client.post('/login', data = {'username': 'test_user_one', 'password': 'password'}, follow_redirects=True)
+        self.assertEqual(resp.status_code, 200)
 
 
 
-# *************************************************************************** FOLLOWS TESTS
+
+

@@ -66,11 +66,8 @@ class UserViewsTestCase(TestCase):
         self.assertEqual(resp.status_code, 200)
 
     def setup_likes(self):
-<<<<<<< HEAD
         m1 = Message(text="testing one two three", user_id=self.u1.id)
         m2 = Message(text="four five six", user_id=self.u2.id)
-=======
-
         m3 = Message(id=1234, text="likable warble", user_id=self.u1.id)
         db.session.add_all([m1, m2, m3])
         db.session.commit()
@@ -86,7 +83,6 @@ class UserViewsTestCase(TestCase):
         db.session.add(msg)
         db.session.commit()
 
-<<<<<<< HEAD
         with self.client.session_transaction() as sess:
             sess[CURR_USER_KEY] = self.ui.id
 
@@ -99,33 +95,13 @@ class UserViewsTestCase(TestCase):
 
     def test_user_show_with_likes(self):
         self.setup_likes()
-=======
-            with self.client.session_transaction() as sess:
-                sess[CURR_USER_KEY] = self.ui.id
 
-            resp = c.post("/messages/2020/like", follow_redirects=True)
-            self.assertEqual(resp.status_code, 200)
-
-            likes = Likes.query.filter(Likes.message_id==2020).all()
-            self.assertEqual(len(likes), 1)
-            self.assertEqual(likes[0].user_id, self.u1.id)
-
-    def test_user_show_with_likes(self):
-       
->>>>>>> adding_tests
 
         resp = self.client.get(f"/users/{self.u1.id}")
         soup = BeautifulSoup(resp.content, 'html.parser')
 
-<<<<<<< HEAD
         self.assertIn("one two three", soup.get_text("one two three"))
         self.assertEqual("one two three", soup.get_text("one two three"))
-
-
-
-
-=======
->>>>>>> adding_tests
 
 
 

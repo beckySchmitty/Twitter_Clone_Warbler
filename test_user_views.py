@@ -3,6 +3,8 @@
 import os
 from unittest import TestCase
 from models import db, User, Message, Follows
+from bs4 import BeautifulSoup
+
 
 os.environ['DATABASE_URL'] = "postgresql:///warbler-test"
 
@@ -62,6 +64,40 @@ class UserViewsTestCase(TestCase):
     def test_loggin_(self):
         resp = self.client.post('/login', data = {'username': 'test_user_one', 'password': 'password'}, follow_redirects=True)
         self.assertEqual(resp.status_code, 200)
+
+    def setup_likes(self):
+        m1 = Message(text="Warble warble shmarble", user_id=self.u1.id)
+        m2 = Message(text="Random warble", user_id=self.u2.id)
+        m3 = Message(id=1234, text="likable warble", user_id=self.u1.id)
+        db.session.add_all([m1, m2, m3])
+        db.session.commit()
+
+        l1 = Likes(user_id=self.u1.id, message_id=1234)
+
+        db.session.add(l1)
+        db.session.commit()
+
+
+    def test_add_like(self):
+        msg = Message(id=2020, text="What a strange year", user_id=self.u1.id)
+        db.session.add(msg)
+        db.session.commit()
+
+            with self.client.session_transaction() as sess:
+                sess[CURR_USER_KEY] = self.ui.id
+
+            resp = c.post("/messages/2020/like", follow_redirects=True)
+            self.assertEqual(resp.status_code, 200)
+
+            likes = Likes.query.filter(Likes.message_id==2020).all()
+            self.assertEqual(len(likes), 1)
+            self.assertEqual(likes[0].user_id, self.u1.id)
+
+    def test_user_show_with_likes(self):
+       
+
+        resp = self.client.get(f"/users/{self.u1.id}")
+        soup = BeautifulSoup(resp.content, 'html.parser')
 
 
 

@@ -65,11 +65,11 @@ class UserViewsTestCase(TestCase):
     def setup_likes(self):
         m1 = Message(text="testing one two three", user_id=self.u1_id)
         m2 = Message(text="four five six", user_id=self.u2_id)
-        m3 = Message(id=1234, text="likable warble", user_id=self.u1_id)
+        m3 = Message(id=1234, text="remove meee", user_id=self.u1_id)
         db.session.add_all([m1, m2, m3])
         db.session.commit()
 
-        l1 = Likes(user_id=self.u1_id, message_id=1234)
+        l1 = Likes(user_id=self.u2_id, message_id=1234)
 
         db.session.add(l1)
         db.session.commit()
@@ -82,16 +82,14 @@ class UserViewsTestCase(TestCase):
 
         with self.client as c:
             with c.session_transaction() as sess:
-                sess[CURR_USER_KEY] = self.u1.id
+                sess[CURR_USER_KEY] = self.u2.id
 
         resp = c.post("/messages/2020/like", follow_redirects=True)
         self.assertEqual(resp.status_code, 200)
 
-        # GETTING 403 - FIX THIS
-
         likes = Likes.query.filter(Likes.message_id==2020).all()
         self.assertEqual(len(likes), 1)
-        self.assertEqual(likes[0].user_id, self.u1_id)
+        self.assertEqual(likes[0].user_id, self.u2_id)
 
     def test_user_show_with_likes(self):
         self.setup_likes()
@@ -102,6 +100,27 @@ class UserViewsTestCase(TestCase):
 
         self.assertIn("one two three", soup.get_text("one two three"))
         self.assertNotEqual("one two three", soup.get_text("one two three"))
+
+    def test_remove_like(self):
+        self.setup_likes()
+
+        m = Message.query.filter(Message.text=="remove meee").one()
+        self.assertIsNotNone(m)
+        self.assertNotEqual(m.user_id, self.u2.id)
+
+
+        with self.client as c:
+            with c.session_transaction() as sess:
+                sess[CURR_USER_KEY] = self.u2.id
+
+        resp = c.post("/messages/1234/like", follow_redirects=True)
+        self.assertEqual(resp.status_code, 200)
+
+        u2_likes = self.u2.likes
+        self.assertIsNone(u2_likes)
+
+        # this is where my error is
+
 
 
 

@@ -1,6 +1,6 @@
 import os
 
-from flask import Flask, render_template, request, flash, redirect, session, g
+from flask import Flask, render_template, request, flash, redirect, session, g, abort
 from flask_debugtoolbar import DebugToolbarExtension
 from sqlalchemy.exc import IntegrityError
 
@@ -239,17 +239,6 @@ def profile():
 
     return render_template('/users/edit.html', form=form, user_id=user.id)
 
-
-# @app.route('/messages/<int:msg_id>/likes', methods=["POST"])
-# def add_like(msg_id):
-#     """Add like to Likes"""
-#     if (Message.query.get(msg_id).user_id != g.user.id):
-#         new_like = Likes(user_id=g.user.id, message_id=msg_id)
-#         db.session.add(new_like)
-#         db.session.commit()
-#         return redirect('/')
-#     else:
-#         flash('You cannot like your own warbles', 'danger')
 
 @app.route('/messages/<int:message_id>/like', methods=['POST'])
 def add_like(message_id):

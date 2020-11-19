@@ -51,7 +51,11 @@
               <span class="text-muted">{{ msg.timestamp.strftime('%d %B %Y') }}</span>
               <p>{{ msg.text }}</p>
             </div>
+<<<<<<< HEAD
             <form method="POST" action="/messages/{{ msg.id }}/like" id="messages-form">
+=======
+            <form method="POST" action="/users/add_like/{{ msg.id }}" id="messages-form">
+>>>>>>> adding_tests
               {% if msg in g.user.likes %}
                 <button class="btn btn-sm btn-danger">
               {% else %}

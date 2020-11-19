@@ -2,17 +2,15 @@
 
 import os
 from unittest import TestCase
-from models import db, User, Message, Follows
+from models import db, User, Message, Follows, Likes
 from bs4 import BeautifulSoup
 
 
 os.environ['DATABASE_URL'] = "postgresql:///warbler-test"
 
 # Now we can import app
-from app import app
+from app import app, CURR_USER_KEY
 
-# db.drop_all()
-db.create_all()
 
 # Don't have WTForms use CSRF at all, since it's a pain to test
 
@@ -25,24 +23,23 @@ class UserViewsTestCase(TestCase):
     def setUp(self):
         """Create test client, add sample data."""
 
-        u1 = User.signup("test_user_one", "test@test.com", "password", None)
-        u1_id = 111
-        u1.id = u1_id
-
-        u2 = User.signup("test_user_two", "test2@test.com", "password", None)
-        u2_id = 222
-        u2.id = u2_id
-
-        db.session.add_all([u1, u2])
-        db.session.commit()
-
-        u1 = User.query.get(u1_id)
-        u2 = User.query.get(u2_id)
-
-        self.u1 = u1
-        self.u2 = u2
+        db.drop_all()
+        db.create_all()
 
         self.client = app.test_client()
+
+
+        self.u1 = User.signup("test_user_one", "test@test.com", "password", None)
+        self.u1_id = 111
+        self.u1.id = self.u1_id
+
+        self.u2 = User.signup("test_user_two", "test2@test.com", "password", None)
+        self.u2_id = 222
+        self.u2.id = self.u2_id
+
+        db.session.commit()
+
+
 
     def tearDown(self):
         res = super().tearDown()
@@ -66,13 +63,13 @@ class UserViewsTestCase(TestCase):
         self.assertEqual(resp.status_code, 200)
 
     def setup_likes(self):
-        m1 = Message(text="testing one two three", user_id=self.u1.id)
-        m2 = Message(text="four five six", user_id=self.u2.id)
-        m3 = Message(id=1234, text="likable warble", user_id=self.u1.id)
+        m1 = Message(text="testing one two three", user_id=self.u1_id)
+        m2 = Message(text="four five six", user_id=self.u2_id)
+        m3 = Message(id=1234, text="likable warble", user_id=self.u1_id)
         db.session.add_all([m1, m2, m3])
         db.session.commit()
 
-        l1 = Likes(user_id=self.u1.id, message_id=1234)
+        l1 = Likes(user_id=self.u1_id, message_id=1234)
 
         db.session.add(l1)
         db.session.commit()
@@ -83,25 +80,28 @@ class UserViewsTestCase(TestCase):
         db.session.add(msg)
         db.session.commit()
 
-        with self.client.session_transaction() as sess:
-            sess[CURR_USER_KEY] = self.ui.id
+        with self.client as c:
+            with c.session_transaction() as sess:
+                sess[CURR_USER_KEY] = self.u1.id
 
         resp = c.post("/messages/2020/like", follow_redirects=True)
         self.assertEqual(resp.status_code, 200)
 
+        # GETTING 403 - FIX THIS
+
         likes = Likes.query.filter(Likes.message_id==2020).all()
         self.assertEqual(len(likes), 1)
-        self.assertEqual(likes[0].user_id, self.u1.id)
+        self.assertEqual(likes[0].user_id, self.u1_id)
 
     def test_user_show_with_likes(self):
         self.setup_likes()
 
 
-        resp = self.client.get(f"/users/{self.u1.id}")
-        soup = BeautifulSoup(resp.content, 'html.parser')
+        resp = self.client.get(f"/users/{self.u1_id}")
+        soup = BeautifulSoup(str(resp.data), 'html.parser')
 
         self.assertIn("one two three", soup.get_text("one two three"))
-        self.assertEqual("one two three", soup.get_text("one two three"))
+        self.assertNotEqual("one two three", soup.get_text("one two three"))
 
 
 

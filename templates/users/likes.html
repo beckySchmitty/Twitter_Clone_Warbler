@@ -3,20 +3,27 @@
   <div class="col-sm-6">
     <ul class="list-group" id="messages">
 
-      {% for like in likes %}
+      {% for msg in likes %}
 
-        <li class="list-group-item">
-          <a href="#" class="message-link"/>
-
-          <a href="/users/{{ user.id }}">
-            <img src="{{ user.image_url }}" alt="user image" class="timeline-image">
-          </a>
-
+      <li class="list-group-item">
+        <a href="/messages/{{ msg.id  }}" class="message-link"/>
+        <a href="/users/{{ msg.user.id }}">
+          <img src="{{ msg.user.image_url }}" alt="" class="timeline-image">
+        </a>
           <div class="message-area">
-            <a href="/users/{{ like.user.id }}">@{{ like.user.username }}</a>
-            <span class="text-muted">{{ like.timestamp.strftime('%d %B %Y') }}</span>
-            <p>{{ like.text }}</p>
+            <a href="/users/{{ msg.user.id }}">@{{ msg.user.username }}</a>
+            <span class="text-muted">{{ msg.timestamp.strftime('%d %B %Y') }}</span>
+            <p>{{ msg.text }}</p>
           </div>
+          <form method="POST" action="/messages/{{ msg.id }}/like" id="messages-form">
+            {% if msg in g.user.likes %}
+              <button class="btn btn-sm btn-danger">
+            {% else %}
+            <button class="btn btn-sm btn-info">
+            {% endif %}
+              <i class="fa fa-thumbs-up"></i> 
+            </button>
+          </form>
         </li>
 
       {% endfor %}

@@ -240,28 +240,51 @@ def profile():
     return render_template('/users/edit.html', form=form, user_id=user.id)
 
 
-@app.route('/users/add_like/<int:msg_id>', methods=["POST"])
-def add_like(msg_id):
-    """Add like to Likes"""
-    if (Message.query.get(msg_id).user_id != g.user.id):
-        new_like = Likes(user_id=g.user.id, message_id=msg_id)
-        db.session.add(new_like)
-        db.session.commit()
-        return redirect('/')
-    else:
-        flash('You cannot like your own warbles', 'danger')
-  
+# @app.route('/messages/<int:msg_id>/likes', methods=["POST"])
+# def add_like(msg_id):
+#     """Add like to Likes"""
+#     if (Message.query.get(msg_id).user_id != g.user.id):
+#         new_like = Likes(user_id=g.user.id, message_id=msg_id)
+#         db.session.add(new_like)
+#         db.session.commit()
+#         return redirect('/')
+#     else:
+#         flash('You cannot like your own warbles', 'danger')
 
-@app.route('/users/<int:user_id>/likes')
-def show_likes(user_id):
-    """Show list of likes this user has liked."""
+@app.route('/messages/<int:message_id>/like', methods=['POST'])
+def add_like(message_id):
+    """Toggle a liked message for the currently-logged-in user."""
 
     if not g.user:
         flash("Access unauthorized.", "danger")
         return redirect("/")
 
-    likes = g.user.likes
-    return render_template('users/likes.html', likes=likes, user=g.user)
+    liked_message = Message.query.get_or_404(message_id)
+    if liked_message.user_id == g.user.id:
+        return abort(403)
+
+    user_likes = g.user.likes
+
+    if liked_message in user_likes:
+        g.user.likes = [like for like in user_likes if like != liked_message]
+    else:
+        g.user.likes.append(liked_message)
+
+    db.session.commit()
+
+    return redirect("/")
+
+
+
+@app.route('/users/<int:user_id>/likes', methods=["GET"])
+def show_likes(user_id):
+    if not g.user:
+        flash("Access unauthorized.", "danger")
+        return redirect("/")
+
+    user = User.query.get_or_404(user_id)
+    return render_template('users/likes.html', user=user, likes=user.likes)
+
 
 
 @app.route('/users/delete', methods=["POST"])

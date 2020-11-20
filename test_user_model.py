@@ -1,30 +1,14 @@
 """User model tests."""
 
-# run these tests like:
-#
-#    python -m unittest test_user_model.py
-
-
 import os
 from unittest import TestCase
+from sqlalchemy import exc
 
 from models import db, User, Message, Follows
 
-# BEFORE we import our app, let's set an environmental variable
-# to use a different database for tests (we need to do this
-# before we import our app, since that will have already
-# connected to the database
-
 os.environ['DATABASE_URL'] = "postgresql:///warbler-test"
 
-
-# Now we can import app
-
 from app import app
-
-# Create our tables (we do this here, so we only create the tables
-# once for all tests --- in each test, we'll delete the data
-# and create fresh new clean test data
 
 db.create_all()
 
@@ -107,10 +91,9 @@ class UserModelTestCase(TestCase):
         self.assertEqual(fake_signup.username, "FakeUser")
         self.assertEqual(fake_signup.email, "FakeEmail@fakeemail.com")
         self.assertNotEqual(fake_signup.password, "password")
-        # Bcrypt strings should start with $2b$
         self.assertTrue(fake_signup.password.startswith("$2b$"))
 
-    def test_invalid_signup(self):
+    def test_invalid_email_signup(self):
             with self.assertRaises(TypeError) as te:
                 invalid_signup = User.signup(
                     password="HASHED_PWD",
@@ -123,6 +106,20 @@ class UserModelTestCase(TestCase):
 
             with self.assertRaises(ValueError) as context:
                 User.signup("testtest", "email@email.com", None, None)
+
+    def test_invalid_username_signup(self):
+        invalid = User.signup(None, "test@test.com", "password", None)
+        uid = 123456789
+        invalid.id = uid
+        with self.assertRaises(exc.IntegrityError) as context:
+            db.session.commit()
+
+    def test_invalid_password_signup(self):
+        with self.assertRaises(ValueError) as context:
+            User.signup("testtest", "email@email.com", "", None)
+        
+        with self.assertRaises(ValueError) as context:
+            User.signup("testtest", "email@email.com", None, None)
 
 # *************************************************************************** AUTHENTICATE 
 

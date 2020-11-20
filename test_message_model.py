@@ -1,30 +1,14 @@
 """Message model tests."""
 
-# run these tests like:
-#
-#    python -m unittest test_user_model.py
-
-
 import os
 from unittest import TestCase
 
 from models import db, User, Message, Follows, Likes
 
-# BEFORE we import our app, let's set an environmental variable
-# to use a different database for tests (we need to do this
-# before we import our app, since that will have already
-# connected to the database
 
 os.environ['DATABASE_URL'] = "postgresql:///warbler-test"
 
-
-# Now we can import app
-
 from app import app
-
-# Create our tables (we do this here, so we only create the tables
-# once for all tests --- in each test, we'll delete the data
-# and create fresh new clean test data
 
 db.create_all()
 
@@ -37,11 +21,15 @@ class MessageModelTestCase(TestCase):
         db.drop_all()
         db.create_all()
 
+        self.u_id = 111
         u = User.signup("test_user", "testing@test.com", "password", None)
-        u.id = 222
+        u.id = self.u_id
         db.session.commit()
 
-        self.u = User.query.get(222)
+        self.u = User.query.get(self.u_id)
+
+        # to prevent detached SQLAlchemy issue later
+        self.u_likes = self.u.likes
 
         self.client = app.test_client()
 
@@ -55,7 +43,7 @@ class MessageModelTestCase(TestCase):
         
         m = Message(
             text="random warble",
-            user_id=self.u.id
+            user_id=self.u_id
         )
         db.session.add(m)
         db.session.commit()
@@ -70,25 +58,26 @@ class MessageModelTestCase(TestCase):
 
     def test_message_likes(self):
         u2 = User.signup("user_tqo", "t@email.com", "password", None)
+        u2_id = 222
+        u2.id = u2_id
         db.session.add(u2)
         db.session.commit()
 
         
         m1 = Message(
             text="warble warble",
-            user_id=self.u.id
+            user_id=self.u_id
         )
         m2 = Message(
             text="wareble not created by self.u",
-            user_id=u2.id
+            user_id=u2_id
         )
 
         db.session.add_all([m1, m2])
         db.session.commit()
 
-        self.u.likes.append(m2)
+        self.u_likes.append(m2)
 
         db.session.commit()
 
-        u_likes = Likes.query.filter(Likes.user_id == self.u.id).all()
-        self.assertEqual(u_likes[0].message_id, m2.id)
+        self.assertEqual(self.u_likes[0].text, "wareble not created by self.u")

@@ -30,15 +30,18 @@ class UserViewsTestCase(TestCase):
 
 
         self.u1 = User.signup("test_user_one", "test@test.com", "password", None)
-        self.u1_id = 111
-        self.u1.id = self.u1_id
+        self.u1.id = 111
+        self.u1_id = self.u1.id
 
         self.u2 = User.signup("test_user_two", "test2@test.com", "password", None)
-        self.u2_id = 222
-        self.u2.id = self.u2_id
+        self.u2.id = 222
+        self.u2_id = self.u2.id
+
+        # to prevent detached SQLAlchemy issue later
+        self.u1_likes = self.u1.likes
+        self.u2_likes = self.u2.likes
 
         db.session.commit()
-
 
 
     def tearDown(self):
@@ -76,7 +79,7 @@ class UserViewsTestCase(TestCase):
 
 
     def test_add_like(self):
-        msg = Message(id=2020, text="What a strange year", user_id=self.u1.id)
+        msg = Message(id=2020, text="What a strange year", user_id=self.u1_id)
         db.session.add(msg)
         db.session.commit()
 
@@ -106,20 +109,18 @@ class UserViewsTestCase(TestCase):
 
         m = Message.query.filter(Message.text=="remove meee").one()
         self.assertIsNotNone(m)
-        self.assertNotEqual(m.user_id, self.u2.id)
+        self.assertNotEqual(m.user_id, self.u2_id)
 
 
         with self.client as c:
             with c.session_transaction() as sess:
-                sess[CURR_USER_KEY] = self.u2.id
+                sess[CURR_USER_KEY] = self.u2_id
 
         resp = c.post("/messages/1234/like", follow_redirects=True)
         self.assertEqual(resp.status_code, 200)
 
-        u2_likes = self.u2.likes
-        self.assertIsNone(u2_likes)
+        self.assertIsNone(self.u2_likes)
 
-        # this is where my error is
 
 
 

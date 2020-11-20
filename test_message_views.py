@@ -41,20 +41,6 @@ class MessageViewTestCase(TestCase):
 
         self.u1 = u1
 
-        # u2 = User.signup("test_user_two", "test2@test.com", "password", None)
-        # u2_id = 222
-        # u2.id = u2_id
-
-        # db.session.add_all([u1, u2])
-        # db.session.commit()
-
-        # u1 = User.query.get(u1_id)
-        # u2 = User.query.get(u2_id)
-
-        # self.u1 = u1
-        # self.u2 = u2
-
-        # self.client = app.test_client()
 
     def test_add_message(self):
         """Can use add a message?"""
